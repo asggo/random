@@ -1,5 +1,5 @@
-// The random package provides cryptographically secure random integers,
-// strings, and
+// The random package provides cryptographically secure random integers
+// and strings.
 package random
 
 import (

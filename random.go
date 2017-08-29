@@ -20,8 +20,8 @@ func Bytes(size int) []byte {
 	return array
 }
 
-// BytesToInt returns a uint64 created from an array of 1 to 8 bytes.
 func bytesToInt(array []byte) uint64 {
+    // Convert an array of 1 to 8 bytes into a 64-bit integer.
 	var integer uint64
 	size := len(array)
 

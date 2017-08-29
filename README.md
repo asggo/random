@@ -10,13 +10,28 @@ package random
 Functions
 =========
 
+func Alpha(n int) string
+
+    Alpha returns a string of length n, which consists of random upper case
+    and lowercase characters. If n is less than or equal to zero then an
+    empty string is returned
+
+func AlphaNum(n int) string
+
+    AlphaNum returns a string of length n, which consists of random
+    uppercase, lowercase, and numeric characters. If n is zero then an empty
+    string is returned.
+
 func Bytes(size int) []byte
 
     Bytes returns an array of the specified size filled with random bytes.
+    Bytes will panic if random bytes cannot be read from the OS.
 
 func Chars(charset string, n int) string
 
-    Chars returns a random string using the given character set
+    Chars returns a random string of length n, which consists of the given
+    character set. If the charset is empty or n is less than or equal to
+    zero then an empty string is returned.
 
 func Int16() int16
 
@@ -53,7 +68,7 @@ func Uint64() uint64
 func Uint64Range(start, end uint64) (uint64, error)
 
     Uint64Range returns a random 64-bit unsigned integer in the range
-    [start, end)
+    [start, end). An error is returned if start is greater than end.
 
 func Uint64n(n uint64) uint64
 

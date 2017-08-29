@@ -22,7 +22,7 @@ func Bytes(size int) []byte {
 }
 
 func bytesToInt(array []byte) uint64 {
-    // Convert an array of 1 to 8 bytes into a 64-bit integer.
+	// Convert an array of 1 to 8 bytes into a 64-bit integer.
 	var integer uint64
 	size := len(array)
 
@@ -82,20 +82,19 @@ func Chars(charset string, n int) string {
 // lowercase characters. If n is less than or equal to zero then an empty
 // string is returned
 func Alpha(n int) string {
-    charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-    return Chars(charset, n)
+	return Chars(charset, n)
 }
 
 // AlphaNum returns a string of length n, which consists of random uppercase,
 // lowercase, and numeric characters. If n is zero then an empty string is
 // returned.
 func AlphaNum(n int) string {
-    charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-    return Chars(charset, n)
+	return Chars(charset, n)
 }
-
 
 // Uint8 returns a random 8-bit unsigned integer.
 func Uint8() uint8 {
@@ -161,8 +160,8 @@ func Uint64n(n uint64) uint64 {
 }
 
 // Int64n returns a random 64-bit signed integer in the range [0, n)
-func Int64n(n uint64) int64 {
-	i, _ := Uint64Range(0, n)
+func Int64n(n int64) int64 {
+	i, _ := Uint64Range(0, uint64(n))
 
 	for {
 		v := int64(i)
@@ -171,7 +170,6 @@ func Int64n(n uint64) int64 {
 			return v
 		}
 
-		i, _ = Uint64Range(0, n)
+		i, _ = Uint64Range(0, uint64(n))
 	}
 }
-

@@ -8,7 +8,8 @@ import (
 	"math"
 )
 
-// Bytes returns an array of the specified size filled with random bytes.
+// Bytes returns an array of the specified size filled with random bytes. Bytes
+// will panic if random bytes cannot be read from the OS.
 func Bytes(size int) []byte {
 	array := make([]byte, size)
 	_, err := rand.Read(array)
@@ -33,7 +34,8 @@ func bytesToInt(array []byte) uint64 {
 	return integer
 }
 
-// Uint64Range returns a random 64-bit unsigned integer in the range [start, end)
+// Uint64Range returns a random 64-bit unsigned integer in the range [start, end).
+// An error is returned if start is greater than end.
 func Uint64Range(start, end uint64) (uint64, error) {
 	val := uint64(0)
 
@@ -54,9 +56,11 @@ func Uint64Range(start, end uint64) (uint64, error) {
 	return val, nil
 }
 
-// Chars returns a random string using the given character set
+// Chars returns a random string of length n, which consists of the given
+// character set. If the charset is empty or n is less than or equal to zero
+// then an empty string is returned.
 func Chars(charset string, n int) string {
-	if n == 0 {
+	if n <= 0 {
 		return ""
 	}
 
@@ -73,6 +77,25 @@ func Chars(charset string, n int) string {
 
 	return string(b)
 }
+
+// Alpha returns a string of length n, which consists of random upper case and
+// lowercase characters. If n is less than or equal to zero then an empty
+// string is returned
+func Alpha(n int) string {
+    charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+    return Chars(charset, n)
+}
+
+// AlphaNum returns a string of length n, which consists of random uppercase,
+// lowercase, and numeric characters. If n is zero then an empty string is
+// returned.
+func AlphaNum(n int) string {
+    charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+    return Chars(charset, n)
+}
+
 
 // Uint8 returns a random 8-bit unsigned integer.
 func Uint8() uint8 {
@@ -144,10 +167,11 @@ func Int64n(n uint64) int64 {
 	for {
 		v := int64(i)
 
-		if v >= 0 {
+		if v >= 0 && v <= n {
 			return v
 		}
 
 		i, _ = Uint64Range(0, n)
 	}
 }
+

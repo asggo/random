@@ -4,84 +4,75 @@ package random
 
 import (
 	"crypto/rand"
+	"encoding/base64"
+	"encoding/binary"
 	"errors"
 	"math"
 )
 
-// Bytes returns an array of the specified size filled with random bytes. Bytes
-// will panic if random bytes cannot be read from the OS.
-func Bytes(size int) []byte {
-	array := make([]byte, size)
-	_, err := rand.Read(array)
-
-	if err != nil {
-		panic(err)
-	}
-
-	return array
-}
-
-func bytesToInt(array []byte) uint64 {
-	// Convert an array of 1 to 8 bytes into a 64-bit integer.
-	var integer uint64
-	size := len(array)
-
-	for i, b := range array {
-		shift := uint64((size - i - 1) * 8)
-		integer |= uint64(b) << shift
-	}
-
-	return integer
-}
-
-// Uint64Range returns a random 64-bit unsigned integer in the range [start, end).
+// Uint64Range returns a random 64-bit unsigned integer in the range [start, end].
 // An error is returned if start is greater than end.
 func Uint64Range(start, end uint64) (uint64, error) {
-	val := uint64(0)
+	var val uint64
 
 	if start >= end {
 		return val, errors.New("Start value must be less than end value.")
 	}
 
+	// Get uniformly distributed numbers in the range 0 to size. Using the
+	// arc4random_uniform algorithm.
+	// https://cvsweb.openbsd.org/cgi-bin/cvsweb/~checkout~/src/lib/libc/crypt/arc4random_uniform.c
+	size := end - start // Get range size
+	min := (math.MaxUint64 - size) % size
+
 	for {
-		val = bytesToInt(Bytes(8))
-		if val <= (math.MaxUint64 - (math.MaxUint64 % end)) {
+		val, err := Uint64()
+		if err != nil {
+			return val, err
+		}
+
+		if val >= min {
 			break
 		}
 	}
 
-	val = val % (end - start)
-	val = val + start
+	val = val % size
+	// End arc4random_uniform
 
-	return val, nil
+	// Add start to val to shift numbers to correct range.
+	return val + start, nil
 }
 
 // Chars returns a random string of length n, which consists of the given
 // character set. If the charset is empty or n is less than or equal to zero
 // then an empty string is returned.
-func Chars(charset string, n int) string {
-	if n <= 0 {
-		return ""
+func Chars(charset string, n uint64) (string, error) {
+	if n == 0 {
+		return "", errors.New("Requested string length cannot be 0.")
 	}
 
 	if len(charset) == 0 {
-		return ""
+		return "", errors.New("Charset cannot be empty.")
 	}
 
 	length := uint64(len(charset))
 	b := make([]byte, n)
 
 	for i := range b {
-		b[i] = charset[Uint64n(length)]
+		j, err := Uint64Range(0, length)
+		if err != nil {
+			return "", err
+		}
+		b[i] = charset[j]
 	}
 
-	return string(b)
+	return string(b), nil
 }
 
 // Alpha returns a string of length n, which consists of random upper case and
 // lowercase characters. If n is less than or equal to zero then an empty
 // string is returned
-func Alpha(n int) string {
+func Alpha(n uint64) (string, error) {
 	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 	return Chars(charset, n)
@@ -90,86 +81,120 @@ func Alpha(n int) string {
 // AlphaNum returns a string of length n, which consists of random uppercase,
 // lowercase, and numeric characters. If n is zero then an empty string is
 // returned.
-func AlphaNum(n int) string {
+func AlphaNum(n uint64) (string, error) {
 	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 	return Chars(charset, n)
 }
 
-// Uint8 returns a random 8-bit unsigned integer.
-func Uint8() uint8 {
-	i, _ := Uint64Range(0, math.MaxUint8)
+// Token returns a string suitable for cryptographic tokens such as session ids.
+func Token() (string, error) {
+	var bytes [32]byte
 
-	return uint8(i)
-}
-
-// Int8 returns a random 8-bit signed integer.
-func Int8() int8 {
-	i, _ := Uint64Range(0, math.MaxUint8)
-
-	return int8(i)
-}
-
-// Uint16 returns a random 16-bit unsigned integer.
-func Uint16() uint16 {
-	i, _ := Uint64Range(0, math.MaxUint16)
-
-	return uint16(i)
-}
-
-// Int16 returns a random 16-bit signed integer.
-func Int16() int16 {
-	i, _ := Uint64Range(0, math.MaxUint16)
-
-	return int16(i)
-}
-
-// Uint32 returns a random 32-bit unsigned integer.
-func Uint32() uint32 {
-	i, _ := Uint64Range(0, math.MaxUint32)
-
-	return uint32(i)
-}
-
-// Int32 returns a random 32-bit signed integer.
-func Int32() int32 {
-	i, _ := Uint64Range(0, math.MaxUint32)
-
-	return int32(i)
-}
-
-// Uint64 returns a random 64-bit unsigned integer.
-func Uint64() uint64 {
-	i, _ := Uint64Range(0, math.MaxUint64)
-
-	return i
-}
-
-// Int64 returns a random 64-bit signed integer.
-func Int64() int64 {
-	i, _ := Uint64Range(0, math.MaxUint64)
-
-	return int64(i)
-}
-
-// Uint64n returns a random 64-bit unsigned integer in the range [0, n)
-func Uint64n(n uint64) uint64 {
-	i, _ := Uint64Range(0, n)
-
-	return i
-}
-
-// Int64n returns a random 64-bit signed integer in the range [0, n)
-func Int64n(n int64) int64 {
-	i, _ := Uint64Range(0, uint64(n))
-
-	for {
-		v := int64(i)
-
-		if v >= 0 && v <= n {
-			return v
-		}
-
-		i, _ = Uint64Range(0, uint64(n))
+	_, err := rand.Read(bytes[:])
+	if err != nil {
+		return "", err
 	}
+
+	return base64.StdEncoding.EncodeToString(bytes[:]), nil
+}
+
+// Uint8 returns a random 8-bit unsigned integer. Return 0 and an error if
+// unable to get random data.
+func Uint8() (uint8, error) {
+	var bytes [1]byte
+
+	_, err := rand.Read(bytes[:])
+	if err != nil {
+		return uint8(0), err
+	}
+
+	return bytes[0], nil
+}
+
+// Int8 returns a random 8-bit signed integer. Return 0 and an error if
+// unable to get random data.
+func Int8() (int8, error) {
+	i, err := Uint8()
+
+	if err != nil {
+		return int8(0), err
+	}
+
+	return int8(i), nil
+}
+
+// Uint16 returns a random 16-bit unsigned integer. Return 0 and an error if
+// unable to get random data.
+func Uint16() (uint16, error) {
+	var bytes [2]byte
+
+	_, err := rand.Read(bytes[:])
+	if err != nil {
+		return uint16(0), err
+	}
+
+	return binary.LittleEndian.Uint16(bytes[:]), nil
+}
+
+// Int16 returns a random 16-bit signed integer. Return 0 and an error if
+// unable to get random data.
+func Int16() (int16, error) {
+	i, err := Uint16()
+
+	if err != nil {
+		return int16(0), err
+	}
+
+	return int16(i), nil
+}
+
+// Uint32 returns a random 32-bit unsigned integer. Return 0 and an error if
+// unable to get random data.
+func Uint32() (uint32, error) {
+	var bytes [4]byte
+
+	_, err := rand.Read(bytes[:])
+	if err != nil {
+		return uint32(0), err
+	}
+
+	return binary.LittleEndian.Uint32(bytes[:]), nil
+}
+
+// Int32 returns a random 32-bit signed integer. Return 0 and an error if
+// unable to get random data.
+func Int32() (int32, error) {
+	i, err := Uint32()
+
+	if err != nil {
+		return int32(0), err
+	}
+
+	return int32(i), nil
+}
+
+// Uint64 returns a random 64-bit unsigned integer. Return 0 and an error if
+// unable to get random data.
+func Uint64() (uint64, error) {
+	var bytes [8]byte
+
+	_, err := rand.Read(bytes[:])
+	if err != nil {
+		return uint64(0), err
+	}
+
+	return binary.LittleEndian.Uint64(bytes[:]), nil
+}
+
+// Int64 returns a random 64-bit signed integer. Return 0 and an error if
+// unable to get random data.
+func Int64() (int64, error) {
+	i, err := Uint64()
+
+	if err != nil {
+		return int64(0), err
+	}
+
+	return int64(i), nil
 }

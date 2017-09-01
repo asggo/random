@@ -8,7 +8,7 @@ import (
 
 type char struct {
 	charset string
-	length  int
+	length  uint64
 }
 
 type byteint struct {
@@ -21,37 +21,11 @@ type intrange struct {
 	end   uint64
 }
 
-func TestRandomBytes(t *testing.T) {
-	var tests = []int{1, 5, 10}
-
-	for _, test := range tests {
-		r := Bytes(test)
-		if len(r) != test {
-			t.Error("Expected", test, "got", len(r))
-		}
-	}
-}
-
-func TestbytesToInt(t *testing.T) {
-	var tests = []byteint{
-		{[]byte{128, 0, 0, 0, 0, 0, 0, 0}, 9223372036854775808},
-		{[]byte{0, 0, 0, 0, 128, 0, 0, 0}, 2147483648},
-		{[]byte{0, 0, 0, 0, 0, 0, 0, 1}, 1},
-		{[]byte{0, 0, 0, 0, 0, 3}, 3},
-		{[]byte{0, 0, 0, 5}, 5},
-	}
-
-	for _, test := range tests {
-		i := bytesToInt(test.bytearray)
-		if i != test.result {
-			t.Error("Expected", test.result, "got", i)
-		}
-	}
-}
-
 func TestUint64Range(t *testing.T) {
 	var tests = []intrange{
 		{0, 10},
+		{111, 112},
+		{0, 1000000},
 		{9223372036854775800, 9223372036854775808},
 	}
 
@@ -75,19 +49,19 @@ func TestChars(t *testing.T) {
 		{"0123456789abcdef", 15},
 	}
 
-	s := Chars("", 15)
-	if s != "" {
-		t.Error("An empty character set should produce an empty string.")
+	_, err := Chars("", 15)
+	if err == nil {
+		t.Error("An empty character set should produce an error.")
 	}
 
-	s = Chars("ABCDEF", 0)
-	if s != "" {
-		t.Error("N <= 0 should produce an empty string.")
+	_, err = Chars("ABCDEF", 0)
+	if err == nil {
+		t.Error("N = 0 should produce an error.")
 	}
 
 	for _, char := range chars {
-		s := Chars(char.charset, char.length)
-		if len(s) != char.length {
+		s, _ := Chars(char.charset, char.length)
+		if uint64(len(s)) != char.length {
 			t.Error("Expected string of length", char.length, "and got string of length", len(s))
 		}
 
@@ -101,16 +75,24 @@ func TestChars(t *testing.T) {
 
 func TestUint8(t *testing.T) {
 	for i := 0; i < 100; i++ {
-		n := Uint8()
+		n, err := Uint8()
+		if err != nil {
+			t.Error("Unexpected Error:", err)
+		}
+
 		if n < 0 || n > math.MaxUint8 {
-			t.Error("Expected integer within range of", 0, "and", math.MaxUint8-1, "got", n)
+			t.Error("Expected integer within range of", 0, "and", math.MaxUint8, "got", n)
 		}
 	}
 }
 
 func TestInt8(t *testing.T) {
 	for i := 0; i < 100; i++ {
-		n := Int8()
+		n, err := Int8()
+		if err != nil {
+			t.Error("Unexpected Error:", err)
+		}
+
 		if n < math.MinInt8 || n > math.MaxInt8 {
 			t.Error("Expected integer within range of", math.MinInt8, "and", math.MaxInt8, "got", n)
 		}
@@ -119,7 +101,11 @@ func TestInt8(t *testing.T) {
 
 func TestUint16(t *testing.T) {
 	for i := 0; i < 100; i++ {
-		n := Uint16()
+		n, err := Uint16()
+		if err != nil {
+			t.Error("Unexpected Error:", err)
+		}
+
 		if n < 0 || n > math.MaxUint16 {
 			t.Error("Expected integer within range of", 0, "and", math.MaxUint16, "got", n)
 		}
@@ -128,7 +114,11 @@ func TestUint16(t *testing.T) {
 
 func TestInt16(t *testing.T) {
 	for i := 0; i < 100; i++ {
-		n := Int16()
+		n, err := Int16()
+		if err != nil {
+			t.Error("Unexpected Error:", err)
+		}
+
 		if n < math.MinInt16 || n > math.MaxInt16 {
 			t.Error("Expected integer within range of", math.MinInt16, "and", math.MaxInt16, "got", n)
 		}
@@ -137,7 +127,11 @@ func TestInt16(t *testing.T) {
 
 func TestUint32(t *testing.T) {
 	for i := 0; i < 100; i++ {
-		n := Uint32()
+		n, err := Uint32()
+		if err != nil {
+			t.Error("Unexpected Error:", err)
+		}
+
 		if n < 0 || n > math.MaxUint32 {
 			t.Error("Expected integer within range of", 0, "and", math.MaxUint32, "got", n)
 		}
@@ -146,7 +140,11 @@ func TestUint32(t *testing.T) {
 
 func TestInt32(t *testing.T) {
 	for i := 0; i < 100; i++ {
-		n := Int32()
+		n, err := Int32()
+		if err != nil {
+			t.Error("Unexpected Error:", err)
+		}
+
 		if n < math.MinInt32 || n > math.MaxInt32 {
 			t.Error("Expected integer within range of", math.MinInt32, "and", math.MaxInt32, "got", n)
 		}
@@ -155,7 +153,11 @@ func TestInt32(t *testing.T) {
 
 func TestUint64(t *testing.T) {
 	for i := 0; i < 100; i++ {
-		n := Uint64()
+		n, err := Uint64()
+		if err != nil {
+			t.Error("Unexpected Error:", err)
+		}
+
 		if n < 0 || n > math.MaxUint64 {
 			t.Error("Expected integer within range of", 0, "and 18446744073709551615 got", n)
 		}
@@ -164,19 +166,13 @@ func TestUint64(t *testing.T) {
 
 func TestInt64(t *testing.T) {
 	for i := 0; i < 100; i++ {
-		n := Int64()
+		n, err := Int64()
+		if err != nil {
+			t.Error("Unexpected Error:", err)
+		}
+
 		if n < math.MinInt64 || n > math.MaxInt64 {
 			t.Error("Expected integer within range of", math.MinInt64, "and", math.MaxInt64, "got", n)
-		}
-	}
-}
-
-func TestUint64n(t *testing.T) {
-	for i := 0; i < 100; i++ {
-		max := uint64(i * i)
-		n := Uint64n(max)
-		if n < 0 || n > uint64(max) {
-			t.Error("Expected integer within range of", 0, "and", max, "got", n)
 		}
 	}
 }

@@ -14,6 +14,7 @@ import (
 // An error is returned if start is greater than end.
 func Uint64Range(start, end uint64) (uint64, error) {
 	var val uint64
+	var err error
 
 	if start >= end {
 		return val, errors.New("Start value must be less than end value.")
@@ -26,7 +27,7 @@ func Uint64Range(start, end uint64) (uint64, error) {
 	min := (math.MaxUint64 - size) % size
 
 	for {
-		val, err := Uint64()
+		val, err = Uint64()
 		if err != nil {
 			return val, err
 		}

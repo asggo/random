@@ -32,7 +32,7 @@ func Uint64Range(start, end uint64) (uint64, error) {
 			return val, err
 		}
 
-		if val >= min {
+		if val > min {
 			break
 		}
 	}
